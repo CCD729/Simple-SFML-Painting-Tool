@@ -5,10 +5,11 @@
 #include <SFML/System.hpp>
 #include <SFML/OpenGL.hpp>
 #include <SFML/Main.hpp>
+#include <iostream>
 
 //Brush default properties
 const int BrushRadiusDefault = 15;
-const sf::Color BrushColorDefault = sf::Color::White;
+const sf::Color BrushColorDefault = sf::Color(170, 196, 255);
 
 int main()
 {
@@ -32,12 +33,26 @@ int main()
         {
             if (event.type == sf::Event::Closed)
                 window.close();
+            // Space key creates a screenshot
+            if (event.key.code == sf::Keyboard::Space) {
+                sf::Texture texture;
+                texture.create(window.getSize().x, window.getSize().y);
+                texture.update(window);
+                if (texture.copyToImage().saveToFile("Mywork.png"))
+                {
+                    std::cout << "Screenshot saved to Mywork.png" << std::endl;
+                }
+            }
         }
         //window.clear();
         
         // Set brush position to the mouse cursor
         shape.setPosition(sf::Mouse::getPosition(window).x - brushRadius, sf::Mouse::getPosition(window).y - brushRadius);
-        window.draw(shape);
+        
+        //Only draw when the mouse left button is down
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+            window.draw(shape);
+        }
         window.display();
     }
 
