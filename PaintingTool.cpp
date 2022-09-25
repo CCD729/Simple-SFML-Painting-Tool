@@ -42,7 +42,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800, 600), "My Little Drawing Tool", sf::Style::Default, settings);
     window.setFramerateLimit(60);
     //Hidethe cursor
-    //window.setMouseCursorVisible(false);
+    window.setMouseCursorVisible(false);
 
     // Create brush
     enum BrushType {
@@ -76,7 +76,7 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
 
-            //Brush shape & color change handler
+            //Brush shape, size & color change handler
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::Left) {
                     brushHSVColor.hue = (brushHSVColor.hue > 0) ? (brushHSVColor.hue - 3) : 360;
@@ -84,10 +84,10 @@ int main()
                 else if (event.key.code == sf::Keyboard::Right) {
                     brushHSVColor.hue = (brushHSVColor.hue <360) ? (brushHSVColor.hue + 3) : 0;
                 }
-                else if (event.key.code == sf::Keyboard::Hyphen) {
+                else if (event.key.code == sf::Keyboard::Comma) {
                     brushHSVColor.sat = (brushHSVColor.sat > 0.f) ? (brushHSVColor.sat - 0.03f) : 0.f;
                 }
-                else if (event.key.code == sf::Keyboard::Equal) {
+                else if (event.key.code == sf::Keyboard::Period) {
                     brushHSVColor.sat = (brushHSVColor.sat < 1.f) ? (brushHSVColor.sat + 0.03f) : 1.f;
                 }
                 else if (event.key.code == sf::Keyboard::Down) {
@@ -95,6 +95,18 @@ int main()
                 }
                 else if (event.key.code == sf::Keyboard::Up) {
                     brushHSVColor.val = (brushHSVColor.val < 1.f) ? (brushHSVColor.val + 0.03f) : 1.f;
+                }
+                else if (event.key.code == sf::Keyboard::Hyphen) {
+                    brushSize = (brushSize > 7.f) ? (brushSize - 4.f) : 3.f;
+                    square.setSize(sf::Vector2f(brushSize * 2.f, brushSize * 2.f));
+                    circle.setRadius(brushSize);
+                    (*currentBrush).setPosition(sf::Mouse::getPosition(window).x - brushSize, sf::Mouse::getPosition(window).y - brushSize);
+                }
+                else if (event.key.code == sf::Keyboard::Equal) {
+                    brushSize = (brushSize < 47.f) ? (brushSize + 4.f) : 50.f;
+                    square.setSize(sf::Vector2f(brushSize * 2.f, brushSize * 2.f));
+                    circle.setRadius(brushSize);
+                    (*currentBrush).setPosition(sf::Mouse::getPosition(window).x - brushSize, sf::Mouse::getPosition(window).y - brushSize);
                 }
                 else if (event.key.code == sf::Keyboard::Space) {
                     if (brushType == CIRCLE) {
@@ -109,8 +121,6 @@ int main()
                         currentBrush = &circle;
                         brushType = CIRCLE;
                     }
-
-                    BrushType brushType = CIRCLE;
                 }
                 brushColor = hsv(brushHSVColor.hue, brushHSVColor.sat, brushHSVColor.val);
             }
