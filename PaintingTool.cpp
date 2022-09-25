@@ -8,21 +8,41 @@
 #include <iostream>
 #include <vector>
 
+//SFML Color to HSV Tool Function by Tenry
+//https://en.sfml-dev.org/forums/index.php?topic=7313.0
+sf::Color hsv(int hue, float sat, float val);
+
+//My little tool class to handle HSV color
+class HSVColor {
+public:
+    int hue;        
+    float sat;
+    float val;
+    HSVColor(int h, float s, float v) {
+        hue = h;
+        sat = s;
+        val = v;
+    }
+};
 //Brush default properties
 const float BrushRadiusDefault = 15.f;
 const sf::Color BrushColorDefault = sf::Color(170, 196, 255);
+const HSVColor HSVColorDefault = HSVColor(222, .33f, 1.f);
+
 int main()
 {
     //Variables for brush
     float brushRadius = BrushRadiusDefault;
     sf::Color brushColor = BrushColorDefault;
+    HSVColor brushHSVColor = HSVColorDefault;
 
     //Create the window
-    //sf::ContextSettings settings;
-    //settings.antialiasingLevel = 8;
-    //sf::RenderWindow window(sf::VideoMode(800, 600), "My Little Drawing Tool", sf::Style::Default, settings);
-    sf::RenderWindow window(sf::VideoMode(800, 600), "My Little Drawing Tool");
+    sf::ContextSettings settings;
+    settings.antialiasingLevel = 8;
+    sf::RenderWindow window(sf::VideoMode(800, 600), "My Little Drawing Tool", sf::Style::Default, settings);
     window.setFramerateLimit(60);
+    //Hidethe cursor
+    window.setMouseCursorVisible(false);
 
     // Create brush
     sf::CircleShape shape(brushRadius);
@@ -39,10 +59,32 @@ int main()
     // Game loop
     while (window.isOpen())
     {
-        //Window close handler
         sf::Event event;
         while (window.pollEvent(event))
         {
+            //Color Change Handler
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::Left) {
+                    brushHSVColor.hue = (brushHSVColor.hue > 0) ? (brushHSVColor.hue - 3) : 360;
+                }
+                else if (event.key.code == sf::Keyboard::Right) {
+                    brushHSVColor.hue = (brushHSVColor.hue <360) ? (brushHSVColor.hue + 3) : 0;
+                }
+                else if (event.key.code == sf::Keyboard::Hyphen) {
+                    brushHSVColor.sat = (brushHSVColor.sat > 0.f) ? (brushHSVColor.sat - 0.03f) : 0.f;
+                }
+                else if (event.key.code == sf::Keyboard::Equal) {
+                    brushHSVColor.sat = (brushHSVColor.sat < 1.f) ? (brushHSVColor.sat + 0.03f) : 1.f;
+                }
+                else if (event.key.code == sf::Keyboard::Down) {
+                    brushHSVColor.val = (brushHSVColor.val > 0.f) ? (brushHSVColor.val - 0.03f) : 0.f;
+                }
+                else if (event.key.code == sf::Keyboard::Up) {
+                    brushHSVColor.val = (brushHSVColor.val < 1.f) ? (brushHSVColor.val + 0.03f) : 1.f;
+                }
+                brushColor = hsv(brushHSVColor.hue, brushHSVColor.sat, brushHSVColor.val);
+            }
+            //Window close handler
             if (event.type == sf::Event::Closed)
                 window.close();
             //Save current draw trail
@@ -106,7 +148,42 @@ int main()
         for (unsigned int i = 0; i < currentDraw.size(); i++) {
             window.draw(*currentDraw[i]);
         }
+        //Display brush as cursor
+        shape.setFillColor(brushColor);
+        shape.setPosition(sf::Mouse::getPosition(window).x - brushRadius, sf::Mouse::getPosition(window).y - brushRadius);
+        window.draw(shape);
         window.display();
     }
     return 0;
+}
+
+//Implementation of HSV Tool Function by Tenry
+sf::Color hsv(int hue, float sat, float val)
+{
+    hue %= 360;
+    while (hue < 0) hue += 360;
+
+    if (sat < 0.f) sat = 0.f;
+    if (sat > 1.f) sat = 1.f;
+
+    if (val < 0.f) val = 0.f;
+    if (val > 1.f) val = 1.f;
+
+    int h = hue / 60;
+    float f = float(hue) / 60 - h;
+    float p = val * (1.f - sat);
+    float q = val * (1.f - sat * f);
+    float t = val * (1.f - sat * (1 - f));
+
+    switch (h)
+    {
+    default:
+    case 0:
+    case 6: return sf::Color(val * 255, t * 255, p * 255);
+    case 1: return sf::Color(q * 255, val * 255, p * 255);
+    case 2: return sf::Color(p * 255, val * 255, t * 255);
+    case 3: return sf::Color(p * 255, q * 255, val * 255);
+    case 4: return sf::Color(t * 255, p * 255, val * 255);
+    case 5: return sf::Color(val * 255, p * 255, q * 255);
+    }
 }
