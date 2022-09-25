@@ -25,14 +25,14 @@ public:
     }
 };
 //Brush default properties
-const float BrushRadiusDefault = 15.f;
+const float BrushSizeDefault = 15.f;
 const sf::Color BrushColorDefault = sf::Color(170, 196, 255);
 const HSVColor HSVColorDefault = HSVColor(222, .33f, 1.f);
 
 int main()
 {
     //Variables for brush
-    float brushRadius = BrushRadiusDefault;
+    float brushSize = BrushSizeDefault;
     sf::Color brushColor = BrushColorDefault;
     HSVColor brushHSVColor = HSVColorDefault;
 
@@ -42,11 +42,21 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800, 600), "My Little Drawing Tool", sf::Style::Default, settings);
     window.setFramerateLimit(60);
     //Hidethe cursor
-    window.setMouseCursorVisible(false);
+    //window.setMouseCursorVisible(false);
 
     // Create brush
-    sf::CircleShape shape(brushRadius);
-    shape.setFillColor(brushColor);
+    enum BrushType {
+        CIRCLE,
+        SQUARE
+    };
+    sf::CircleShape circle(brushSize);
+    sf::RectangleShape square(sf::Vector2f(brushSize * 2.f, brushSize * 2.f));
+    circle.setFillColor(brushColor);
+    square.setFillColor(brushColor);
+    sf::Shape* currentBrush = &circle;
+    BrushType brushType = CIRCLE;
+    
+
     //Create stack for drawing steps
     std::vector<std::vector<sf::Shape*>> shapeStack;
     std::vector<sf::Shape*> currentDraw;
@@ -62,7 +72,11 @@ int main()
         sf::Event event;
         while (window.pollEvent(event))
         {
-            //Color Change Handler
+            //Window close handler
+            if (event.type == sf::Event::Closed)
+                window.close();
+
+            //Brush shape & color change handler
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::Left) {
                     brushHSVColor.hue = (brushHSVColor.hue > 0) ? (brushHSVColor.hue - 3) : 360;
@@ -82,24 +96,48 @@ int main()
                 else if (event.key.code == sf::Keyboard::Up) {
                     brushHSVColor.val = (brushHSVColor.val < 1.f) ? (brushHSVColor.val + 0.03f) : 1.f;
                 }
+                else if (event.key.code == sf::Keyboard::Space) {
+                    if (brushType == CIRCLE) {
+                        square.setFillColor(brushColor);
+                        square.setSize(sf::Vector2f(brushSize*2.f, brushSize*2.f));
+                        currentBrush = &square;
+                        brushType = SQUARE;
+                    }
+                    else if (brushType == SQUARE) {
+                        circle.setFillColor(brushColor);
+                        circle.setRadius(brushSize);
+                        currentBrush = &circle;
+                        brushType = CIRCLE;
+                    }
+
+                    BrushType brushType = CIRCLE;
+                }
                 brushColor = hsv(brushHSVColor.hue, brushHSVColor.sat, brushHSVColor.val);
             }
-            //Window close handler
-            if (event.type == sf::Event::Closed)
-                window.close();
+
             //Save current draw trail
-            else if (event.type == sf::Event::MouseMoved && mouseLeftDown){
+            else if (event.type == sf::Event::MouseMoved && mouseLeftDown) {
                 if (mouseLeftDown) {
-                    shape.setFillColor(brushColor);
+                    (*currentBrush).setFillColor(brushColor);
                 }
-                shape.setPosition(sf::Mouse::getPosition(window).x - brushRadius, sf::Mouse::getPosition(window).y - brushRadius);
-                currentDraw.push_back(new sf::CircleShape(shape));
+                (*currentBrush).setPosition(sf::Mouse::getPosition(window).x - brushSize, sf::Mouse::getPosition(window).y - brushSize);
+                if (brushType == CIRCLE) {
+                    currentDraw.push_back(new sf::CircleShape(*((sf::CircleShape*)currentBrush)));
+                }
+                else if (brushType == SQUARE) {
+                    currentDraw.push_back(new sf::RectangleShape(*((sf::RectangleShape*)currentBrush)));
+                }
             }
             else if (event.type == sf::Event::MouseButtonPressed) {
                 if (event.key.code == sf::Mouse::Left) {
                     mouseLeftDown = true;
-                    shape.setPosition(sf::Mouse::getPosition(window).x - brushRadius, sf::Mouse::getPosition(window).y - brushRadius);
-                    currentDraw.push_back(new sf::CircleShape(shape));
+                    (*currentBrush).setPosition(sf::Mouse::getPosition(window).x - brushSize, sf::Mouse::getPosition(window).y - brushSize);
+                    if (brushType == CIRCLE) {
+                        currentDraw.push_back(new sf::CircleShape(*((sf::CircleShape*)currentBrush)));
+                    }
+                    else if (brushType == SQUARE) {
+                        currentDraw.push_back(new sf::RectangleShape(*((sf::RectangleShape*)currentBrush)));
+                    }
                 }
             }
             else if (event.type == sf::Event::MouseButtonReleased) {
@@ -149,9 +187,9 @@ int main()
             window.draw(*currentDraw[i]);
         }
         //Display brush as cursor
-        shape.setFillColor(brushColor);
-        shape.setPosition(sf::Mouse::getPosition(window).x - brushRadius, sf::Mouse::getPosition(window).y - brushRadius);
-        window.draw(shape);
+        (*currentBrush).setFillColor(brushColor);
+        (*currentBrush).setPosition(sf::Mouse::getPosition(window).x - brushSize, sf::Mouse::getPosition(window).y - brushSize);
+        window.draw(*currentBrush);
         window.display();
     }
     return 0;
